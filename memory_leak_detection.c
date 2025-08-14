@@ -44,5 +44,63 @@ void my_free(void* ptr, const char* file, int line){
     MemBlock* current = allocated_blocks;
     MemBlock* previous = NULL;
 
-    
+    while(current){
+        if(current->address == ptr){
+            //Found the block, remove it from the list
+            if(ptr){
+                previous->next = current->next;
+            }else {
+                allocated_blocks = current->next;
+            }
+            free(current);
+            free(ptr); // Free the actual memory
+            return;
+            }
+            previous = current;
+            current = current->next;
+        }
+        fprintf(stderr, "warning ; Attempted to free unallocated memory at %p (called from %s:%d)\n", ptr, file, line);
+        free(ptr);// Free the actual memory 
+
+    }
+/* Macro for easier memory allocation */
+#define MALLOC(size) my_malloc(size, __FILE__, __LINE__)
+#define FREE(ptr) my_free(ptr, __FILE__, __LINE__)
+
+    //Leak detection report
+
+void dump_memory_leaks(){
+    MemBlock* current = allocated_blocks;
+    if(!current){
+        printf("No memory leaks detected.\n");
+        return;
+    }
+
+    printf("Memory leaks detected:\n");
+    while (current) {
+        printf("Leak at %p (size: %zu, allocated from %s:%d)\n",
+               current->address, current->size, current->file, current->line);
+        current = current->next;
+    }
+    printf("End of memory leak report.\n");
+}
+
+int main(){
+    char* data1 = (char*)MALLOC(100);
+    if(data1){
+        strcpy(data1, "Hello, World!");
+
+    }
+    int* data2 = (int*)MALLOC(sizeof(int) * 10);
+    if(data2){
+        for(int i = 0; i < 10; i++){
+            data2[i] = i;
+        }
+        FREE(data2); // Freeing data2
+        //Simulate a leak by not freeing data1
+        //FREE(data1);
+
+        dump_memory_leaks(); // Check for memory leaks
+        return 0;
+    }
 }
