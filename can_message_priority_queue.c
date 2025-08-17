@@ -4,10 +4,11 @@
 
 //Define priority levels
 typedef enum{
-    PRIORITY_HIGH = 0,
-    PRIORITY_MEDIUM,
-    PRIORITY_LOW,
-    NUM_PRIORITIES // Keep track of the number of priority levels
+    CRITICAL = 0,
+    HIGH,
+    MEDIUM,
+    LOW,
+    
 } CANMessagePriority_t;
 
 // Structure for a CAN message
@@ -22,10 +23,58 @@ typedef struct{
  * This approach uses an array of standard queues, with each index 
  * representing a priority level.
  */
+/**
+ * A common approach for  priority queue datastructure is to use a min-heap or max-heap implemented 
+ * using an array. For this , a simple array-based approach with insertion sorting or a linked list with ordered
+ * insertion can also work for smaller queues.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+
+#define MAX_CAN_QUEUE_SIZE 100 // Maximum number of messages in the queue
+
+CanMessage_t can_message_queue[MAX_CAN_QUEUE_SIZE];
+int queue_size = 0;
+
+// Function to insert a message into priority queue
+void enqueue_can_message(CanMessage_t message){
+    if (queue_size >= MAX_CAN_QUEUE_SIZE){
+        printf("Queue is full. Cannot enqueue message with ID: %u\n", message.id);
+        return;
+    }
+    // Insert message into the queue based on its priority
+    int i = queue_size - 1;
+    while (i >= 0 && can_message_queue[i].priority > message.priority){
+        can_message_queue[i + 1] = can_message_queue[i];
+        i--;
+    }
+    can_message_queue[i + 1] = message;
+    queue_size ++;
+}
+
+// Function to retrieve highest priority message
+CanMessage_t dequeue_can_message(){
+    if (queue_size == 0){
+        // Handle empty queue (e.g. return a special "empty" message)
+        CanMessage_t empty_msg = {0}; // Inititalize zeros
+        return empty_msg
+    }
+
+    CanMessage_t highest_priority_msg = can_message_queue[0];
+    // Shift remaining messages to fill the gap
+    for(int i = 0; i < queue_size - 1; i++){
+        can_message_queue[i] = can_message_queue[i + 1];
+
+    }
+    queue_size--;
+    return highest_priority_msg;
+}
+
+
 
 
 
