@@ -33,11 +33,12 @@ typedef struct{
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <pthread.h>
 
 
 #define MAX_CAN_QUEUE_SIZE 100 // Maximum number of messages in the queue
 
-CanMessage_t can_message_queue[MAX_CAN_QUEUE_SIZE];
+CanMessage_t can_message_queue[MAX_CAN_QUEUE_SIZE];//CAN message queue array based 
 int queue_size = 0;
 
 // Function to insert a message into priority queue
@@ -58,10 +59,10 @@ void enqueue_can_message(CanMessage_t message){
 
 // Function to retrieve highest priority message
 CanMessage_t dequeue_can_message(){
-    if (queue_size == 0){
+    if (queue_size == 0){// Queue is empty
         // Handle empty queue (e.g. return a special "empty" message)
         CanMessage_t empty_msg = {0}; // Inititalize zeros
-        return empty_msg
+        return empty_msg;
     }
 
     CanMessage_t highest_priority_msg = can_message_queue[0];
@@ -72,12 +73,20 @@ CanMessage_t dequeue_can_message(){
     }
     queue_size--;
     return highest_priority_msg;
+
+
 }
+// Synchronization mechanisms (e.g., mutexes) should be used in a real-time system to protect access to the queue
+pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
-
-
-
-
-
-
+void enqueue_message_safe(CanMessage_t message){
+    pthread_mutex_lock(&queue_mutex);// Lock the mutex
+    enqueue_can_message(message);// call the thread-safe enqueue function
+    pthread_mutex_unlock(&queue_mutex);// release the mutex
+}
+CanMessage_t dequeue_message_safe(){
+    pthread_mutex_lock(&queue_mutex);// Lock the mutex
+    CanMessage_t message = dequeue_can_message();// Call the thread-safe dequeue function
+    pthread_mutex_unlock(&queue_mutex);// release the mutex
+    return message;
+}
